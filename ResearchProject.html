@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Around the Board — Research Project</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#121a33; --text:#eaf0ff; --muted:#aab6e8; --line:#26305b;
+      --blue:#4da3ff; --yellow:#ffd24d; --purple:#b27bff; --orange:#ff9f4d;
+      --good:#2ee59d; --bad:#ff6b6b; --start:#33d17a;
+      --sq:44px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#070b16,#0b1020);color:var(--text)}
+    header{padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(11,16,32,.92);backdrop-filter: blur(8px);z-index:5}
+    h1{margin:0;font-size:16px}
+    .wrap{max-width:1250px;margin:0 auto;padding:14px 16px}
+    .tabs{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+    .tab{border:1px solid var(--line);padding:8px 10px;border-radius:12px;cursor:pointer;color:var(--muted);user-select:none}
+    .tab.active{background:var(--card);color:var(--text)}
+    .eyebrow{font-size:11px;letter-spacing:.35px;text-transform:uppercase;color:var(--muted)}
+    .title{font-size:24px;font-weight:800;letter-spacing:.2px}
+
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}}
+
+    .card{background:rgba(18,26,51,.85);border:1px solid var(--line);border-radius:16px;padding:14px}
+    .cardTitle{margin:0 0 6px;font-size:14px;}
+    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+    input,select,textarea{
+      width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);
+      background:#0c1430;color:var(--text);outline:none
+    }
+    textarea{min-height:80px;resize:vertical}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    button{
+      padding:10px 12px;border-radius:12px;border:1px solid var(--line);
+      background:#0c1430;color:var(--text);cursor:pointer
+    }
+    button.primary{background:var(--card)}
+    button.good{border-color:rgba(46,229,157,.5)}
+    button.bad{border-color:rgba(255,107,107,.45)}
+    .small{font-size:12px;color:var(--muted)}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+    .dot{width:10px;height:10px;border-radius:50%}
+    .dot.blue{background:var(--blue)} .dot.yellow{background:var(--yellow)}
+    .dot.purple{background:var(--purple)} .dot.orange{background:var(--orange)}
+    .hr{height:1px;background:var(--line);margin:12px 0}
+    .tagRow{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+    .pill.ghost{background:rgba(255,255,255,.03)}
+
+    /* Board */
+    .boardShell{display:grid;grid-template-columns:1.8fr 1fr;gap:14px;align-items:start}
+    @media (max-width:1100px){.boardShell{grid-template-columns:1fr}}
+    .boardArea{padding:18px}
+    .boardWrap{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;align-items:start;margin-top:12px}
+    @media (max-width:900px){.boardWrap{grid-template-columns:1fr}}
+    .boardFrame{padding:14px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,rgba(16,23,46,.8),rgba(12,18,38,.95));box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .legend{margin-top:10px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .board{
+      display:grid;
+      grid-template-columns:repeat(7, var(--sq));
+      grid-template-rows:repeat(7, var(--sq));
+      gap:6px;
+      padding:10px;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:#0a1230;
+      position:relative;
+    }
+    .cell{
+      width:var(--sq);height:var(--sq);
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.08);
+      display:flex;align-items:center;justify-content:center;
+      font-size:11px;color:rgba(255,255,255,.8);
+      position:relative;
+      user-select:none;
+    }
+    .cell.inactive{
+      background:rgba(255,255,255,.02);
+      border-color:rgba(255,255,255,.04);
+    }
+    .cell.blue{background:rgba(77,163,255,.18);border-color:rgba(77,163,255,.35)}
+    .cell.yellow{background:rgba(255,210,77,.18);border-color:rgba(255,210,77,.35)}
+    .cell.purple{background:rgba(178,123,255,.18);border-color:rgba(178,123,255,.35)}
+    .cell.orange{background:rgba(255,159,77,.18);border-color:rgba(255,159,77,.35)}
+    .cell.start{outline:2px solid rgba(46,229,157,.75);box-shadow:0 0 0 3px rgba(46,229,157,.08);background:rgba(51,209,122,.18);border-color:rgba(51,209,122,.6)}
+    .cell.finish{outline:2px solid rgba(255,107,107,.55)}
+    .tokens{position:absolute;left:6px;bottom:6px;display:flex;gap:6px;flex-wrap:wrap}
+    .tok{
+      width:16px;height:16px;border-radius:999px;border:1px solid rgba(255,255,255,.25);
+      display:inline-block;
+    }
+    .tok.t1{background:#4da3ff}
+    .tok.t2{background:#ffd24d}
+    .tok.t3{background:#b27bff}
+    .tok.t4{background:#ff9f4d}
+    .cell .tokens{left:5px;bottom:5px}
+
+    /* Modal */
+    .modalBack{
+      position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;
+      z-index:50;padding:18px;
+    }
+    .modal{
+      width:min(720px, 100%);
+      background:#0b1330;border:1px solid var(--line);border-radius:18px;padding:14px;
+    }
+    .choices{display:grid;gap:8px;margin-top:10px}
+    .choice{
+      padding:10px;border:1px solid var(--line);border-radius:12px;background:#0a1230;cursor:pointer
+    }
+    .choice.correct{border-color:rgba(46,229,157,.7)}
+    .choice.wrong{border-color:rgba(255,107,107,.7)}
+    .topbar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+    .warn{color:#ffd24d}
+    code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:8px}
+
+    /* Sidebar + dice */
+    .sideStack{display:flex;flex-direction:column;gap:12px}
+    .dieWrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .die{
+      width:82px;height:82px;border-radius:16px;border:1px solid var(--line);
+      display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;
+      background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.08),rgba(255,255,255,.02));
+      box-shadow:0 10px 24px rgba(0,0,0,.25);
+    }
+    .die.pop{animation:pop .25s ease}
+    @keyframes pop{0%{transform:scale(.96)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+
+    /* Lap track */
+    .lapGrid{display:grid;gap:10px}
+    .lapItem{border:1px solid var(--line);border-radius:12px;padding:10px;background:rgba(255,255,255,.02)}
+    .lapName{display:flex;align-items:center;gap:8px;font-weight:600}
+    .lapBar{height:8px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;margin:8px 0}
+    .lapBar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg, var(--blue), var(--purple))}
+
+    .boardAction{
+      position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+      display:flex;flex-direction:column;align-items:center;gap:8px;
+    }
+    .bigRoll{
+      padding:14px 18px;border-radius:14px;border:1px solid rgba(46,229,157,.6);
+      background:linear-gradient(120deg,rgba(51,209,122,.16),rgba(51,209,122,.05));
+      color:var(--text);font-weight:700;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.25);
+    }
+    .bigRoll:disabled{opacity:.6;cursor:not-allowed;border-color:var(--line)}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Around the Board</h1>
+    <div class="tabs">
+      <div class="tab active" data-view="play">Play</div>
+      <div class="tab" data-view="admin">Add / Manage Questions</div>
+      <div class="tab" data-view="import">Import / Export</div>
+    </div>
+    <div class="small" style="margin-top:6px">Research Project made by Ahmad Abdualmouti</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- PLAY -->
+  <section id="view-play">
+    <div class="boardShell">
+      <div class="card boardArea">
+        <div class="topbar">
+          <div>
+            <div class="eyebrow">Research Project</div>
+            <div class="title">Around the Board</div>
+            <div class="small">Win by completing 3 laps and landing exactly on FINISH.</div>
+          </div>
+          <span class="pill" id="statusPill">Loading…</span>
+        </div>
+
+        <div class="tagRow">
+          <span class="pill ghost">Roll a 6-sided die every turn</span>
+          <span class="pill ghost">Correct answer = move your roll</span>
+          <span class="pill ghost">Wrong answer = lose turn, stay</span>
+        </div>
+
+        <div class="boardWrap">
+          <div class="boardFrame" style="position:relative">
+            <div class="board" id="board"></div>
+            <div class="boardAction">
+              <button class="bigRoll" id="rollBtn">Roll & Answer</button>
+              <div class="small" id="rollHint">Roll first, then answer. Move after question.</div>
+            </div>
+            <div class="legend small">
+              <span class="dot blue"></span> People • <span class="dot yellow"></span> Events •
+              <span class="dot purple"></span> Places • <span class="dot orange"></span> Ethics/Resistance • START is 0, FINISH is the last space
+            </div>
+          </div>
+
+          <div class="card" style="padding:12px">
+            <h3 class="cardTitle">Turn Snapshot</h3>
+            <div class="small" id="turnInfo"></div>
+            <div class="hr"></div>
+            <div class="lapGrid" id="lapGrid"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sideStack">
+        <div class="card">
+          <div class="topbar" style="align-items:flex-start">
+            <h3 class="cardTitle" style="margin:0">Dice & Movement</h3>
+            <button id="resetGameBtn" class="bad">Reset Game</button>
+          </div>
+          <div class="dieWrap">
+            <div id="dieFace" class="die">—</div>
+            <div class="small">
+              Roll first. Question shows after the roll. Move only after you answer.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="cardTitle">Player Setup (2–4)</h3>
+          <div class="small warn">Choose players, then set names.</div>
+
+          <label>How many players?</label>
+          <select id="playerCount">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+          </select>
+
+          <div id="nameInputs"></div>
+
+          <div class="btns">
+            <button id="saveNamesBtn" class="primary">Apply Players</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="cardTitle">Question Bank</h3>
+          <div class="small">
+            Preloaded with 80 curated questions (20 per color). You can edit, add, or export them anytime.
+          </div>
+          <div class="btns" style="margin-top:10px">
+            <button id="seedBtn" class="primary">Restore curated set</button>
+            <button id="goAdminBtn">Open Question Builder</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="cardTitle">Rules Snapshot</h3>
+          <div class="small">
+            1) Roll a d6 (green button in the board) to see your number.
+            <br/>2) Answer a question from the color you’ll land on.
+            <br/>3) Correct = move forward by your roll; Wrong = stay put (turn ends).
+            <br/>4) After 3 laps, you must land exactly on FINISH to win.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ADMIN -->
+  <section id="view-admin" style="display:none">
+    <div class="grid">
+      <div class="card">
+        <h2 style="margin:0 0 6px;font-size:16px;">Add a multiple-choice question</h2>
+
+        <label>Category / Color</label>
+        <select id="category">
+          <option value="People">People & Personal Stories (Blue)</option>
+          <option value="Events">Major Historical Events (Yellow)</option>
+          <option value="Places">Geography & Places (Purple)</option>
+          <option value="Ethics">Ethics / Resistance (Orange)</option>
+        </select>
+
+        <label>Question</label>
+        <textarea id="prompt" placeholder="Type the question..."></textarea>
+
+        <div class="row">
+          <div><label>Choice A</label><input id="a" placeholder="Option A"/></div>
+          <div><label>Choice B</label><input id="b" placeholder="Option B"/></div>
+        </div>
+        <div class="row">
+          <div><label>Choice C</label><input id="c" placeholder="Option C"/></div>
+          <div><label>Choice D</label><input id="d" placeholder="Option D"/></div>
+        </div>
+
+        <label>Correct answer</label>
+        <select id="correct">
+          <option value="A">A</option><option value="B">B</option>
+          <option value="C">C</option><option value="D">D</option>
+        </select>
+
+        <label>Explanation / Notes (optional)</label>
+        <textarea id="explain" placeholder="Short explanation or source note..."></textarea>
+
+        <div class="btns">
+          <button class="primary" id="saveBtn">Save question</button>
+          <button id="clearBtn">Clear</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="topbar">
+          <h2 style="margin:0;font-size:16px;">Your questions</h2>
+          <span class="pill" id="countPill">0 total</span>
+        </div>
+
+        <label>Filter</label>
+        <select id="filter">
+          <option value="All">All</option>
+          <option value="People">People</option>
+          <option value="Events">Events</option>
+          <option value="Places">Places</option>
+          <option value="Ethics">Ethics</option>
+        </select>
+
+        <div class="btns">
+          <button class="bad" id="wipeBtn">Delete all</button>
+        </div>
+
+        <div class="hr"></div>
+        <div id="list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- IMPORT -->
+  <section id="view-import" style="display:none">
+    <div class="card">
+      <h2 style="margin:0 0 6px;font-size:16px;">Import / Export</h2>
+
+      <div class="btns">
+        <button class="primary" id="exportBtn">Export JSON</button>
+      </div>
+
+      <label>Import JSON</label>
+      <textarea id="importBox" placeholder="Paste exported JSON here..."></textarea>
+      <div class="btns">
+        <button class="primary" id="importBtn">Import</button>
+      </div>
+
+      <div class="small" id="importStatus" style="margin-top:10px"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap small" style="text-align:center; padding-bottom:24px; opacity:.9">
+  Around the Board — Research Project made by Ahmad Abdualmouti
+</footer>
+
+<!-- QUESTION MODAL -->
+<div class="modalBack" id="modalBack">
+  <div class="modal">
+    <div class="topbar">
+      <div class="small" id="modalMeta"></div>
+      <button id="closeModalBtn">Close</button>
+    </div>
+    <div class="hr"></div>
+    <div id="modalQ" style="font-size:16px"></div>
+    <div class="choices" id="modalChoices"></div>
+    <div class="hr"></div>
+    <div class="small" id="modalExplain"></div>
+    <div class="small" id="modalResult" style="margin-top:8px"></div>
+    <div class="btns">
+      <button class="primary" id="continueBtn" disabled>Continue</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const QKEY = "around_the_board_questions_v1";
+  const NKEY = "around_the_board_names_v1";
+  const GKEY = "around_the_board_state_v1";
+  const MIN_PLAYERS = 2;
+  const MAX_PLAYERS = 4;
+  const $ = (id)=>document.getElementById(id);
+
+  const BOARD_SIZE = 24;
+  const START = 0;
+  const FINISH = BOARD_SIZE - 1;
+  const LAPS_TO_WIN = 3;
+
+  const colorCycle = ["blue","yellow","purple","orange"];
+  const categoryForColor = { blue:"People", yellow:"Events", purple:"Places", orange:"Ethics" };
+  const specials = new Map([[6,{label:"FACT"}],[12,{label:"CHALL"}],[18,{label:"FACT"}]]);
+  function colorForIndex(i){ return colorCycle[i % colorCycle.length]; }
+  const curatedQuestions = [
+    // People (20)
+    {category:"People", prompt:"Who was Anne Frank?", choices:{A:"A Nazi official",B:"A Jewish teenager whose diary became a testimony",C:"A Soviet general",D:"A U.S. president"}, correct:"B", explain:"Her diary is a well-known personal account of hiding."},
+    {category:"People", prompt:"Elie Wiesel is best known for…", choices:{A:"Designing the Marshall Plan",B:"Writing the memoir 'Night'",C:"Commanding Allied armies",D:"Inventing radar"}, correct:"B", explain:"'Night' recounts his experiences in Nazi camps."},
+    {category:"People", prompt:"Oskar Schindler is remembered for…", choices:{A:"Leading the Red Army",B:"Signing the Versailles Treaty",C:"Saving Jewish workers by protecting them in his factories",D:"Serving as a postwar judge"}, correct:"C", explain:"He employed and sheltered workers on his factory list."},
+    {category:"People", prompt:"Irena Sendler is known for…", choices:{A:"Smuggling children out of the Warsaw Ghetto",B:"Piloting planes in the Battle of Britain",C:"Leading the Wannsee Conference",D:"Creating the Nuremberg Laws"}, correct:"A", explain:"She organized rescue routes for hundreds of children."},
+    {category:"People", prompt:"Raoul Wallenberg helped by…", choices:{A:"Commanding partisans in forests",B:"Leading the Warsaw Uprising",C:"Translating Allied code",D:"Issuing protective passports in Budapest"}, correct:"D", explain:"He provided Schutz-Pass papers and safe houses."},
+    {category:"People", prompt:"Chiune Sugihara issued life-saving visas in…", choices:{A:"Spain",B:"Lithuania",C:"Canada",D:"Iraq"}, correct:"B", explain:"He was a Japanese diplomat in Kaunas, Lithuania."},
+    {category:"People", prompt:"Jan Karski is known for…", choices:{A:"Commanding Auschwitz",B:"Aiding Nazi propaganda",C:"Reporting eyewitness accounts of the Holocaust to Allied leaders",D:"Running the Marshall Plan"}, correct:"C", explain:"He delivered underground reports to London and Washington."},
+    {category:"People", prompt:"Hannah Szenes was…", choices:{A:"A poet who parachuted into Europe to aid rescue efforts",B:"A leader of the SS",C:"A judge at the Nuremberg Trials",D:"A Nazi codebreaker"}, correct:"A", explain:"She joined a British-backed mission to support resistance."},
+    {category:"People", prompt:"Primo Levi is remembered as…", choices:{A:"A general in Italy",B:"Author of 'If This Is a Man' about surviving Auschwitz",C:"A German diplomat",D:"A postwar prosecutor in Japan"}, correct:"B", explain:"His memoir (also known as 'Survival in Auschwitz') is widely read."},
+    {category:"People", prompt:"Sophie Scholl was part of…", choices:{A:"The SS medical corps",B:"The Einsatzgruppen",C:"The White Rose student resistance group",D:"The Luftwaffe high command"}, correct:"C", explain:"She and peers distributed anti-Nazi leaflets."},
+    {category:"People", prompt:"Dietrich Bonhoeffer was…", choices:{A:"A pastor who opposed Nazism and was imprisoned",B:"A Nazi propaganda minister",C:"A Soviet tank commander",D:"A U.S. senator"}, correct:"A", explain:"He was executed for resistance activities."},
+    {category:"People", prompt:"Mordechai Anielewicz is linked to…", choices:{A:"The Wannsee meeting",B:"Leading the Warsaw Ghetto Uprising",C:"Drafting the Nuremberg Laws",D:"Serving as Pope"}, correct:"B", explain:"He commanded the Jewish Fighting Organization in 1943."},
+    {category:"People", prompt:"Emanuel Ringelblum organized…", choices:{A:"The Luftwaffe",B:"Allied war bonds",C:"The Wannsee Conference minutes",D:"The clandestine Oneg Shabbat archive in the Warsaw Ghetto"}, correct:"D", explain:"He led documentation of ghetto life and persecution."},
+    {category:"People", prompt:"Janusz Korczak chose to…", choices:{A:"Flee to Switzerland",B:"Command a U-boat",C:"Stay with his orphanage children during deportation",D:"Lead Allied bombing raids"}, correct:"C", explain:"He refused to abandon the children in his care."},
+    {category:"People", prompt:"Corrie ten Boom is known for…", choices:{A:"Hiding people in a secret room in the Netherlands",B:"Writing the Nazi party anthem",C:"Running a death camp",D:"Serving on the Gestapo"}, correct:"A", explain:"Her family's home sheltered Jews and resisters."},
+    {category:"People", prompt:"Vladka Meed served the resistance as…", choices:{A:"A camp doctor",B:"A Nazi officer",C:"A pilot",D:"A courier who smuggled messages, weapons, and children"}, correct:"D", explain:"She moved between the Warsaw Ghetto and the outside world."},
+    {category:"People", prompt:"Gerda Weissmann Klein is remembered for…", choices:{A:"Commanding panzer units",B:"Drafting the Yalta Agreement",C:"Surviving a death march and writing 'All But My Life'",D:"Leading the SS Women's Corps"}, correct:"C", explain:"Her memoir chronicles survival and resilience."},
+    {category:"People", prompt:"Abba Kovner helped form…", choices:{A:"The Gestapo",B:"Jewish partisan units around Vilna",C:"The Red Cross postwar",D:"The United Nations charter"}, correct:"B", explain:"He issued a call to arms and later fought as a partisan."},
+    {category:"People", prompt:"Marian Turski is…", choices:{A:"A Nazi jurist",B:"An American general",C:"A journalist and survivor who speaks about memory and the '11th commandment'",D:"A Soviet spy in London"}, correct:"C", explain:"He survived Lodz and Auschwitz and urges 'Thou shalt not be indifferent.'"},
+    {category:"People", prompt:"Yehuda Bauer is known as…", choices:{A:"An Israeli historian of the Holocaust",B:"A Nazi officer in France",C:"A British prime minister",D:"A U.S. Supreme Court justice"}, correct:"A", explain:"He is a leading scholar on Holocaust history."},
+
+    // Events (20)
+    {category:"Events", prompt:"What were the Nuremberg Laws of 1935?", choices:{A:"Allied rules for war crimes trials",B:"A set of antisemitic laws stripping Jews of rights and citizenship",C:"A peace treaty after WWII",D:"A code of conduct for soldiers"}, correct:"B", explain:"They removed citizenship and banned many civil rights."},
+    {category:"Events", prompt:"Kristallnacht (Nov 1938) refers to…", choices:{A:"A secret resistance radio",B:"A night of widespread Nazi attacks on Jewish synagogues, homes, and businesses",C:"A German victory parade",D:"An Allied bombing raid"}, correct:"B", explain:"Also called the Night of Broken Glass."},
+    {category:"Events", prompt:"The Wannsee Conference (Jan 1942) was where…", choices:{A:"Nazi leaders coordinated the 'Final Solution'",B:"The UN was founded",C:"The Marshall Plan was signed",D:"Germany surrendered"}, correct:"A", explain:"Officials discussed logistics of mass murder."},
+    {category:"Events", prompt:"Kindertransport (1938–1939) was…", choices:{A:"A deportation to Siberia",B:"A British-backed rescue of mostly Jewish children from Nazi territories",C:"A German troop movement",D:"A Soviet military plan"}, correct:"B", explain:"About 10,000 children reached safety in Britain."},
+    {category:"Events", prompt:"The Warsaw Ghetto Uprising of 1943 was…", choices:{A:"A Soviet tank battle",B:"A spontaneous food protest",C:"An organized Jewish armed revolt against deportations",D:"An Allied bombing run"}, correct:"C", explain:"Fighters resisted further transports to death camps."},
+    {category:"Events", prompt:"Operation Reinhard involved…", choices:{A:"Building Allied airfields",B:"Constructing the Maginot Line",C:"Establishing the death camps Belzec, Sobibor, and Treblinka",D:"Postwar rebuilding of Warsaw"}, correct:"C", explain:"It aimed to murder Jews in occupied Poland."},
+    {category:"Events", prompt:"Einsatzgruppen were…", choices:{A:"Nazi mobile killing units that shot civilians in occupied Eastern Europe",B:"Allied medics",C:"German tank divisions in North Africa",D:"Soviet partisan squads"}, correct:"A", explain:"They murdered Jews, Roma, and others, especially in 1941–42."},
+    {category:"Events", prompt:"Auschwitz was liberated in…", choices:{A:"September 1939",B:"June 1944",C:"January 1945",D:"November 1946"}, correct:"C", explain:"The Red Army reached Auschwitz on January 27, 1945."},
+    {category:"Events", prompt:"The Evian Conference (1938) was called to discuss…", choices:{A:"Naval strategy",B:"Jewish refugees fleeing Nazi persecution",C:"Atomic weapons",D:"Reparations for WWI"}, correct:"B", explain:"Many nations hesitated to increase immigration quotas."},
+    {category:"Events", prompt:"Babi Yar (1941) is known for…", choices:{A:"A naval battle",B:"A mass shooting of Jews near Kyiv by German forces and collaborators",C:"A peace treaty site",D:"A factory strike"}, correct:"B", explain:"Tens of thousands were murdered there in two days."},
+    {category:"Events", prompt:"The Treblinka revolt in 1943 was…", choices:{A:"A tank mutiny",B:"An escape and uprising by prisoners in the death camp",C:"A Soviet invasion",D:"A conference of Allied leaders"}, correct:"B", explain:"Prisoners set fires and many tried to flee."},
+    {category:"Events", prompt:"What happened at Sobibor in October 1943?", choices:{A:"Arrival of the first Allied troops",B:"A failed air raid",C:"A prisoner-led uprising and escape",D:"The Wannsee Conference"}, correct:"C", explain:"Prisoners killed some guards and hundreds escaped."},
+    {category:"Events", prompt:"The Lodz Ghetto was liquidated primarily in…", choices:{A:"1914",B:"1929",C:"1944",D:"1950"}, correct:"C", explain:"Most remaining residents were sent to Auschwitz in 1944."},
+    {category:"Events", prompt:"Dachau is significant because…", choices:{A:"It was the first regular Nazi concentration camp (opened 1933)",B:"It was the last camp liberated",C:"It was built in Canada",D:"It housed the Wannsee meeting"}, correct:"A", explain:"It initially held political prisoners and later others."},
+    {category:"Events", prompt:"The voyage of the St. Louis (1939) involved…", choices:{A:"A German battleship",B:"Refugees denied entry to Cuba and the U.S.",C:"A Soviet supply mission",D:"A British troopship"}, correct:"B", explain:"Over 900 Jewish refugees were forced to return to Europe."},
+    {category:"Events", prompt:"The Nuremberg Trials (1945–46) were held to…", choices:{A:"Write the Geneva Conventions",B:"Plan the Marshall Plan",C:"Prosecute major Nazi leaders for war crimes and crimes against humanity",D:"Set new borders for Europe"}, correct:"C", explain:"They established legal precedents on accountability."},
+    {category:"Events", prompt:"Why were deportations often carried out in sealed cattle cars?", choices:{A:"They provided comfortable seating",B:"To hide and control prisoners during transport to camps",C:"To speed up civilian travel",D:"Because planes were unavailable"}, correct:"B", explain:"Cars limited escape and concealed deportations."},
+    {category:"Events", prompt:"What was the main goal of sealing Jewish ghettos?", choices:{A:"To protect residents from bombing",B:"To provide fair housing",C:"To isolate, control, and exploit Jewish populations",D:"To create tourist districts"}, correct:"C", explain:"Ghettos restricted movement and facilitated deportations."},
+    {category:"Events", prompt:"When was Auschwitz-Birkenau used as a killing center?", choices:{A:"Only in 1918",B:"From 1942 onward during the Final Solution",C:"After 1950",D:"Never—it was only a factory"}, correct:"B", explain:"Mass gassing operations began in 1942."},
+    {category:"Events", prompt:"What was the primary purpose of the Wannsee protocol document?", choices:{A:"To outline German naval plans",B:"To document the coordinated plan for the 'Final Solution'",C:"To invite refugees to Germany",D:"To schedule Allied landings"}, correct:"B", explain:"It recorded decisions to organize mass deportation and murder."},
+
+    // Places (20)
+    {category:"Places", prompt:"Auschwitz-Birkenau was located in…", choices:{A:"Occupied Poland",B:"Spain",C:"Sweden",D:"Portugal"}, correct:"A", explain:"Near the town of Oświęcim in occupied Poland."},
+    {category:"Places", prompt:"Treblinka was…", choices:{A:"A forced labor site in Canada",B:"A death camp in occupied Poland northeast of Warsaw",C:"A city in France",D:"A naval base in Norway"}, correct:"B", explain:"It operated primarily as an extermination site."},
+    {category:"Places", prompt:"Sobibor was located…", choices:{A:"In North Africa",B:"In occupied Poland near Lublin",C:"In Spain",D:"In Denmark"}, correct:"B", explain:"It was one of the Operation Reinhard killing centers."},
+    {category:"Places", prompt:"Bełżec was…", choices:{A:"A Soviet airfield",B:"A death camp in occupied Poland",C:"A British port",D:"A U.S. base"}, correct:"B", explain:"Another Operation Reinhard killing site."},
+    {category:"Places", prompt:"Chelmno (Kulmhof) is known as…", choices:{A:"A camp that used gas vans near Łódź in occupied Poland",B:"A Swiss refugee camp",C:"A Soviet prison",D:"A U.S. training base"}, correct:"A", explain:"Victims were murdered in mobile gas vans."},
+    {category:"Places", prompt:"Majdanek was located…", choices:{A:"In Portugal",B:"On the outskirts of Lublin in occupied Poland",C:"In Sweden",D:"In Italy"}, correct:"B", explain:"It served as a concentration and killing site."},
+    {category:"Places", prompt:"Bergen-Belsen was…", choices:{A:"In Germany",B:"In Canada",C:"In Japan",D:"In Morocco"}, correct:"A", explain:"Located in Lower Saxony, Germany."},
+    {category:"Places", prompt:"Dachau was situated…", choices:{A:"Near Munich, Germany",B:"In Spain",C:"In Hungary",D:"In Canada"}, correct:"A", explain:"It was the first regular Nazi concentration camp."},
+    {category:"Places", prompt:"Buchenwald was near…", choices:{A:"Paris, France",B:"Weimar, Germany",C:"Lisbon, Portugal",D:"Rome, Italy"}, correct:"B", explain:"It was one of the largest camps inside Germany."},
+    {category:"Places", prompt:"Ravensbrück is best described as…", choices:{A:"A naval base",B:"A women's concentration camp in Germany",C:"A Soviet fortress",D:"A Polish city"}, correct:"B", explain:"Tens of thousands of women were imprisoned there."},
+    {category:"Places", prompt:"Westerbork served mainly as…", choices:{A:"A British naval dockyard",B:"A transit camp in the Netherlands",C:"A Soviet airfield",D:"A death camp in Croatia"}, correct:"B", explain:"Many Dutch Jews were sent through Westerbork."},
+    {category:"Places", prompt:"Drancy, near Paris, functioned as…", choices:{A:"A ski resort",B:"An underground bunker",C:"A transit camp for deportations to Auschwitz",D:"A submarine base"}, correct:"C", explain:"It was the main French transit camp."},
+    {category:"Places", prompt:"Theresienstadt (Terezín) was…", choices:{A:"A medieval castle in Spain",B:"A ghetto/camp in the Protectorate of Bohemia and Moravia (today Czech Republic)",C:"A factory in Belgium",D:"A British POW camp"}, correct:"B", explain:"It was used for propaganda and as a transit site."},
+    {category:"Places", prompt:"The Łódź Ghetto was located in…", choices:{A:"France",B:"Germany",C:"Occupied Poland",D:"Spain"}, correct:"C", explain:"It was the second-largest ghetto after Warsaw."},
+    {category:"Places", prompt:"The Warsaw Ghetto was in…", choices:{A:"Austria",B:"Occupied Poland",C:"Denmark",D:"Switzerland"}, correct:"B", explain:"It held hundreds of thousands before deportations."},
+    {category:"Places", prompt:"The Vilna/Vilnius Ghetto was in…", choices:{A:"Present-day Lithuania",B:"Portugal",C:"Greece",D:"Iceland"}, correct:"A", explain:"Vilnius was then under Nazi occupation."},
+    {category:"Places", prompt:"Plaszow camp was…", choices:{A:"A naval yard",B:"A forced labor camp near Kraków, Poland",C:"A British air base",D:"A U.S. refugee center"}, correct:"B", explain:"Shown in 'Schindler's List' as well."},
+    {category:"Places", prompt:"Mauthausen was located in…", choices:{A:"Austria",B:"Spain",C:"Turkey",D:"Egypt"}, correct:"A", explain:"Known for especially brutal conditions and stone quarries."},
+    {category:"Places", prompt:"Ponary (Paneriai) near Vilnius was…", choices:{A:"A liberation camp",B:"A major site of mass shootings",C:"An Allied airstrip",D:"A naval dock"}, correct:"B", explain:"Tens of thousands of Jews and others were shot there."},
+    {category:"Places", prompt:"Jasenovac was…", choices:{A:"A British prison",B:"A Ustaše-run concentration and death camp in the Independent State of Croatia",C:"A Soviet naval port",D:"An island resort"}, correct:"B", explain:"Operated by the fascist Ustaše regime."},
+
+    // Ethics / Resistance (20)
+    {category:"Ethics", prompt:"The White Rose group is an example of…", choices:{A:"Nazi medical research",B:"Student-led nonviolent resistance through leaflets",C:"A new weapon",D:"A camp guard unit"}, correct:"B", explain:"Students and a professor urged moral resistance to Nazism."},
+    {category:"Ethics", prompt:"'Righteous Among the Nations' refers to…", choices:{A:"Allied generals",B:"People recognized for risking their lives to save Jews",C:"A Nazi award",D:"A shipbuilding program"}, correct:"B", explain:"Yad Vashem honors non-Jewish rescuers with this title."},
+    {category:"Ethics", prompt:"Partisan units in Eastern Europe often…", choices:{A:"Guarded camps for Nazis",B:"Sabotaged rail lines and attacked German forces",C:"Trained Luftwaffe pilots",D:"Ran Allied embassies"}, correct:"B", explain:"They disrupted transports and military supply lines."},
+    {category:"Ethics", prompt:"Why were diaries, clandestine newspapers, and secret archives important acts of resistance?", choices:{A:"They replaced electricity",B:"They preserved truth, culture, and evidence under oppression",C:"They funded the Axis",D:"They were leisure magazines"}, correct:"B", explain:"Documenting reality countered Nazi lies and preserved memory."},
+    {category:"Ethics", prompt:"What risk did families face for hiding Jews?", choices:{A:"A small fine",B:"Temporary house arrest",C:"Potential arrest, deportation, or execution",D:"A tax penalty"}, correct:"C", explain:"Punishment varied but could be severe, including death."},
+    {category:"Ethics", prompt:"Spiritual or cultural resistance could include…", choices:{A:"Sabotaging only trains",B:"Maintaining prayer, study, or music despite bans",C:"Building tanks",D:"Forming political parties"}, correct:"B", explain:"Protecting identity and dignity under persecution."},
+    {category:"Ethics", prompt:"Secret schooling in ghettos represented…", choices:{A:"Collaboration",B:"Financial planning",C:"Resistance by keeping education and hope alive",D:"Sports training only"}, correct:"C", explain:"Teaching defied Nazi attempts to erase culture and future."},
+    {category:"Ethics", prompt:"Smuggling food into ghettos was risky because…", choices:{A:"Food was banned everywhere",B:"Censors wanted recipes",C:"Guards could punish or kill smugglers",D:"It was taxed heavily"}, correct:"C", explain:"People risked their lives to reduce starvation."},
+    {category:"Ethics", prompt:"Uprisings like the Warsaw Ghetto Uprising signaled…", choices:{A:"Acceptance of Nazi policy",B:"Desire to collaborate",C:"Determination to resist deportation despite overwhelming odds",D:"New trade agreements"}, correct:"C", explain:"Armed resistance aimed to disrupt deportations and assert agency."},
+    {category:"Ethics", prompt:"Councils known as Judenräte faced ethical dilemmas because…", choices:{A:"They held veto power over Hitler",B:"They negotiated fair wages",C:"They had to respond to Nazi orders under threat, affecting community survival",D:"They controlled Allied armies"}, correct:"C", explain:"Leaders operated under coercion, often with impossible choices."},
+    {category:"Ethics", prompt:"Why did Nazis sometimes use phrases like 'resettlement to the East'?", choices:{A:"To promise better housing",B:"To disguise deportations and murder plans",C:"To explain train schedules accurately",D:"To advertise tourism"}, correct:"B", explain:"Euphemisms masked the reality of mass killing."},
+    {category:"Ethics", prompt:"What ethical debate did Allied governments face regarding bombing rail lines to camps?", choices:{A:"Whether planes could fly",B:"How to balance military priorities with attempts to disrupt deportations",C:"Which music to play for troops",D:"Whether to end rationing"}, correct:"B", explain:"Some argued strikes might save lives; others prioritized other targets."},
+    {category:"Ethics", prompt:"Producing false identity papers was considered resistance because…", choices:{A:"It was fashionable",B:"It helped people escape detection and deportation",C:"It entertained guards",D:"It raised tax revenue"}, correct:"B", explain:"Forged documents enabled hiding or flight."},
+    {category:"Ethics", prompt:"Listening to banned BBC or foreign radio broadcasts in Nazi territories was…", choices:{A:"Encouraged by the regime",B:"A neutral act",C:"Illegal and risky but helped people hear uncensored news",D:"Only for sailors"}, correct:"C", explain:"Information countered propaganda and aided resistance."},
+    {category:"Ethics", prompt:"Couriers in resistance networks often…", choices:{A:"Delivered mail safely through the post office",B:"Carried hidden messages, money, and news between ghettos and allies",C:"Organized sports leagues",D:"Commanded German armies"}, correct:"B", explain:"They kept underground movements connected."},
+    {category:"Ethics", prompt:"Why is remembrance considered an ethical duty after genocide?", choices:{A:"It increases movie sales",B:"It prevents studying the past",C:"It honors victims and supports vigilance against future atrocities",D:"It changes weather patterns"}, correct:"C", explain:"Memory underpins prevention and empathy."},
+    {category:"Ethics", prompt:"Education about the Holocaust is framed as…", choices:{A:"A distraction from human rights",B:"A tool to foster critical thinking and prevent future genocides",C:"A military tactic",D:"A tourism strategy"}, correct:"B", explain:"Learning history can strengthen ethical awareness today."},
+    {category:"Ethics", prompt:"Żegota (Council to Aid Jews) was…", choices:{A:"A Nazi police unit",B:"A Polish underground organization dedicated to rescuing Jews",C:"A Soviet spy ring",D:"An Allied code name for D-Day"}, correct:"B", explain:"It provided hiding places, funds, and documents."},
+    {category:"Ethics", prompt:"Kindertransport is also an example of…", choices:{A:"Forced labor",B:"A relief effort to save children from persecution",C:"A naval convoy code",D:"A postwar migration back to Germany"}, correct:"B", explain:"Though limited, it brought thousands of children to safety."},
+    {category:"Ethics", prompt:"In ethical discussions, a 'bystander' is someone who…", choices:{A:"Leads the resistance",B:"Passively observes without intervening",C:"Commands armies",D:"Writes laws"}, correct:"B", explain:"Contrasted with perpetrators, collaborators, and rescuers."},
+  ];
+
+  function loadQs(){ try{return JSON.parse(localStorage.getItem(QKEY)||"[]")}catch{return []} }
+  function saveQs(arr){ localStorage.setItem(QKEY, JSON.stringify(arr)); updateCount(); renderList(); updateStatus(); }
+  function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+  function escapeHtml(str=""){ return str.replace(/[&<>"']/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m])); }
+  function mergeCurated(existing){
+    const map = new Map();
+    curatedQuestions.forEach((q,i)=>{
+      const key = (q.prompt||"").trim().toLowerCase();
+      map.set(key, {...q, id: uid(), createdAt: Date.now()+i});
+    });
+    existing.forEach(q=>{
+      const key = (q.prompt||"").trim().toLowerCase();
+      if(!map.has(key)) map.set(key, q);
+    });
+    return Array.from(map.values());
+  }
+  function ensureCuratedBaseline(){
+    const existing = loadQs();
+    const counts = existing.reduce((acc,q)=>{ acc[q.category]=(acc[q.category]||0)+1; return acc; },{});
+    const needsSeed = ["People","Events","Places","Ethics"].some(cat => (counts[cat]||0) < 20);
+    if(needsSeed) saveQs(mergeCurated(existing));
+  }
+
+  function renderNameInputs(){
+    const wrap = $("nameInputs"); if(!wrap) return;
+    const playerData = loadPlayerData();
+    const count = parseInt($("playerCount").value,10) || playerData.count;
+    wrap.innerHTML = "";
+    for(let i=0;i<count;i++){
+      const label = document.createElement("label");
+      label.textContent = `Player ${i+1}`;
+      const input = document.createElement("input");
+      input.id = `p${i+1}name`;
+      input.value = playerData.names[i] || defaultNames[i];
+      wrap.appendChild(label);
+      wrap.appendChild(input);
+    }
+  }
+
+  let editingId = null;
+  function validateForm(){
+    if(!$("prompt").value.trim()) return "Question is required.";
+    const choices = [$("a").value,$("b").value,$("c").value,$("d").value].map(s=>s.trim());
+    if(choices.some(c=>!c)) return "All 4 choices are required.";
+    return null;
+  }
+  function clearForm(){
+    editingId = null;
+    $("category").value="People";
+    $("prompt").value="";
+    $("a").value="";$("b").value="";$("c").value="";$("d").value="";
+    $("correct").value="A";
+    $("explain").value="";
+    $("saveBtn").textContent="Save question";
+  }
+  function upsertQ(){
+    const err = validateForm(); if(err){ alert(err); return; }
+    const all = loadQs();
+    const q = {
+      id: editingId || uid(),
+      category: $("category").value,
+      prompt: $("prompt").value.trim(),
+      choices:{ A:$("a").value.trim(), B:$("b").value.trim(), C:$("c").value.trim(), D:$("d").value.trim() },
+      correct: $("correct").value,
+      explain: $("explain").value.trim(),
+      createdAt: editingId ? (all.find(x=>x.id===editingId)?.createdAt || Date.now()) : Date.now()
+    };
+    const idx = all.findIndex(x=>x.id===q.id);
+    if(idx>=0) all[idx]=q; else all.push(q);
+    saveQs(all);
+    clearForm();
+  }
+  function delQ(id){
+    if(!confirm("Delete this question?")) return;
+    saveQs(loadQs().filter(x=>x.id!==id));
+  }
+  function editQ(id){
+    const q = loadQs().find(x=>x.id===id); if(!q) return;
+    editingId=id;
+    $("category").value=q.category;
+    $("prompt").value=q.prompt;
+    $("a").value=q.choices.A; $("b").value=q.choices.B; $("c").value=q.choices.C; $("d").value=q.choices.D;
+    $("correct").value=q.correct;
+    $("explain").value=q.explain||"";
+    $("saveBtn").textContent="Update question";
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+  function updateCount(){
+    const all = loadQs();
+    const per = ["People","Events","Places","Ethics"].map(cat=>`${cat[0]}:${all.filter(q=>q.category===cat).length}`);
+    $("countPill").textContent = `${all.length} total (${per.join(" • ")})`;
+  }
+  function renderList(){
+    const all = loadQs();
+    const filter = $("filter")?.value || "All";
+    const items = filter==="All" ? all : all.filter(q=>q.category===filter);
+    const list = $("list");
+    if(!list) return;
+    list.innerHTML = "";
+    if(items.length===0){ list.innerHTML = `<div class="small">No questions for this filter yet.</div>`; return; }
+    items.slice().sort((a,b)=>b.createdAt-a.createdAt).forEach(q=>{
+      const div = document.createElement("div");
+      div.className="card";
+      div.style.padding="12px";
+      div.style.marginBottom="10px";
+      div.innerHTML = `
+        <div class="topbar">
+          <div class="small"><b>${q.category}</b> • ${new Date(q.createdAt).toLocaleString()}</div>
+          <div class="btns" style="margin:0">
+            <button data-act="edit" data-id="${q.id}">Edit</button>
+            <button class="bad" data-act="del" data-id="${q.id}">Delete</button>
+          </div>
+        </div>
+        <div class="hr"></div>
+        <div><b>Q:</b> ${escapeHtml(q.prompt)}</div>
+        <div class="small" style="margin-top:8px">
+          <b>A.</b> ${escapeHtml(q.choices.A)} &nbsp; <b>B.</b> ${escapeHtml(q.choices.B)}<br/>
+          <b>C.</b> ${escapeHtml(q.choices.C)} &nbsp; <b>D.</b> ${escapeHtml(q.choices.D)}<br/>
+          <b>Correct:</b> ${q.correct}
+        </div>
+      `;
+      div.querySelectorAll("button").forEach(btn=>{
+        btn.addEventListener("click", (e)=>{
+          const act = e.target.dataset.act;
+          const id = e.target.dataset.id;
+          if(act==="del") delQ(id);
+          if(act==="edit") editQ(id);
+        });
+      });
+      list.appendChild(div);
+    });
+  }
+
+  const defaultNames = ["Anne Frank","Elie Wiesel","Irena Sendler","Oskar Schindler"];
+  function loadPlayerData(){
+    try{
+      const x = JSON.parse(localStorage.getItem(NKEY)||"null");
+      if(Array.isArray(x)){ return {count: Math.min(MAX_PLAYERS, Math.max(MIN_PLAYERS, x.length||4)), names:x}; }
+      if(x && Array.isArray(x.names) && x.count) return {count: x.count, names: x.names};
+    }catch{}
+    return {count:4, names: defaultNames.slice()};
+  }
+  function savePlayerData(count, names){
+    const sanitized = names.slice(0, count).map((n,i)=> n.trim() || defaultNames[i]);
+    localStorage.setItem(NKEY, JSON.stringify({count, names: sanitized}));
+  }
+  function getPlayerCount(){ return loadPlayerData().count || 4; }
+  function loadNames(){
+    const pd = loadPlayerData();
+    const arr = [];
+    for(let i=0;i<getPlayerCount();i++) arr.push(pd.names[i] || defaultNames[i]);
+    return arr;
+  }
+  function saveNames(arr){
+    savePlayerData(arr.length, arr);
+    updateTurnInfo(); drawBoard(); renderLapGrid();
+  }
+
+  function defaultGame(count=getPlayerCount()){
+    return { positions:Array(count).fill(0), laps:Array(count).fill(0), current:0, lastRoll:null, message:"", pendingRoll:null };
+  }
+  function loadGame(){
+    const count = getPlayerCount();
+    try{
+      const g = JSON.parse(localStorage.getItem(GKEY)||"null");
+      if(g && Array.isArray(g.positions) && Array.isArray(g.laps)){
+        if(g.positions.length !== count || g.laps.length !== count){
+          return defaultGame(count);
+        }
+        if(g.current >= count) g.current = 0;
+        return {...g, pendingRoll: g.pendingRoll ?? null};
+      }
+    }catch{}
+    return defaultGame(count);
+  }
+  function saveGame(g){ localStorage.setItem(GKEY, JSON.stringify(g)); updateTurnInfo(); drawBoard(); renderLapGrid(); updateStatus(); }
+
+  function resetGame(){ if(!confirm("Reset the game to start positions?")) return; saveGame(defaultGame()); }
+
+  function perimeterCoords(){
+    const coords = [];
+    for(let c=0;c<7;c++) coords.push([0,c]);
+    for(let r=1;r<7;r++) coords.push([r,6]);
+    for(let c=5;c>=0;c--) coords.push([6,c]);
+    for(let r=5;r>=1;r--) coords.push([r,0]);
+    return coords;
+  }
+  const coords = perimeterCoords();
+  function drawBoard(){
+    const board = $("board"); if(!board) return;
+    board.innerHTML="";
+    const coordToIndex = new Map(coords.map((rc,i)=>[rc.join(","), i]));
+    const g = loadGame();
+    const names = loadNames();
+
+    for(let r=0;r<7;r++){
+      for(let c=0;c<7;c++){
+        const key = `${r},${c}`;
+        const idx = coordToIndex.get(key);
+        const cell = document.createElement("div");
+        cell.className="cell";
+        if(idx === undefined){
+          cell.classList.add("inactive");
+        } else {
+          const col = colorForIndex(idx);
+          cell.classList.add(col);
+
+          if(idx===START){ cell.classList.add("start"); cell.textContent="START"; }
+          else if(idx===FINISH){ cell.classList.add("finish"); cell.textContent="FINISH"; }
+          else if(specials.has(idx)){ cell.textContent = specials.get(idx).label; }
+          else cell.textContent = "";
+
+          const tokWrap = document.createElement("div");
+          tokWrap.className="tokens";
+          for(let p=0;p<g.positions.length;p++){
+            if(g.positions[p]===idx){
+              const t = document.createElement("span");
+              t.className = `tok t${p+1}`;
+              t.title = names[p];
+              tokWrap.appendChild(t);
+            }
+          }
+          cell.appendChild(tokWrap);
+        }
+        board.appendChild(cell);
+      }
+    }
+  }
+
+  function renderLapGrid(){
+    const box = $("lapGrid"); if(!box) return;
+    const g = loadGame();
+    const names = loadNames();
+    box.innerHTML = "";
+    g.laps.forEach((lap,i)=>{
+      const row = document.createElement("div");
+      row.className = "lapItem";
+      const pct = Math.min((lap / LAPS_TO_WIN) * 100, 100);
+      row.innerHTML = `
+        <div class="lapName"><span class="tok t${i+1}"></span>${escapeHtml(names[i])}</div>
+        <div class="lapBar"><span style="width:${pct}%"></span></div>
+        <div class="small">Lap ${lap} / ${LAPS_TO_WIN}</div>
+      `;
+      box.appendChild(row);
+    });
+  }
+
+  function setDieFace(val){
+    const el = $("dieFace"); if(!el) return;
+    el.textContent = val ?? "—";
+    el.classList.remove("pop");
+    void el.offsetWidth; // restart animation
+    el.classList.add("pop");
+  }
+
+  function updateStatus(){
+    const qCount = loadQs().length;
+    const g = loadGame();
+    $("statusPill").textContent = `Questions: ${qCount} • Players: ${g.positions.length} • Turn: Player ${g.current+1} • Last roll: ${g.lastRoll ?? "—"}`;
+  }
+
+  function updateTurnInfo(){
+    const g = loadGame();
+    const names = loadNames();
+    const p = g.current % g.positions.length;
+    const pos = g.positions[p];
+    const lap = g.laps[p];
+    const onColor = colorForIndex(pos);
+    const cat = categoryForColor[onColor];
+    const extra = g.message ? `<div class="small warn" style="margin-top:8px">${escapeHtml(g.message)}</div>` : "";
+    setDieFace(g.lastRoll ?? "—");
+    $("turnInfo").innerHTML = `
+      <b>Current player:</b> P${p+1} (${escapeHtml(names[p])})
+      <br/><b>Position:</b> ${pos===START?"START":(pos===FINISH?"FINISH":pos)} • <b>Laps:</b> ${lap}/${LAPS_TO_WIN}
+      <br/><b>Space color now:</b> ${cat}
+      <br/><b>Last roll:</b> ${g.lastRoll ?? "—"} (correct answer moves this many spaces)
+      ${extra}
+    `;
+  }
+
+  function rollDie(){
+    if(window.crypto?.getRandomValues){
+      const arr = new Uint32Array(1);
+      crypto.getRandomValues(arr);
+      return (arr[0] % 6) + 1;
+    }
+    return Math.floor(Math.random()*6)+1;
+  }
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+  function normalizeChoicesForDisplay(choices){
+    const keys = ["A","B","C","D"];
+    const vals = keys.map(k=>choices[k]||"");
+    const max = Math.max(...vals.map(v=>v.length));
+    const min = Math.min(...vals.map(v=>v.length));
+    if(max - min < 18) return {...choices}; // already close
+    const target = Math.min(Math.max(45, max - 4), 90);
+    const fillers = [" in that context"," during the period"," in that era"," under those conditions"," within that setting"];
+    let fi = 0;
+    const out = {};
+    keys.forEach(k=>{
+      let txt = choices[k] || "";
+      while(txt.length < target){
+        txt += fillers[fi % fillers.length];
+        fi++;
+        if(txt.length >= target - 3) break;
+      }
+      out[k] = txt;
+    });
+    return out;
+  }
+
+  function movePlayerBy(g, player, steps){
+    if(steps > 0){
+      for(let i=0;i<steps;i++){
+        const before = g.positions[player];
+        const after = (before + 1) % BOARD_SIZE;
+        g.positions[player] = after;
+        if(before === FINISH && after === START){
+          g.laps[player] += 1;
+        }
+      }
+      return;
+    }
+    if(steps < 0){
+      for(let i=0;i<Math.abs(steps);i++){
+        const before = g.positions[player];
+        const after = (before - 1 + BOARD_SIZE) % BOARD_SIZE;
+        g.positions[player] = after;
+      }
+    }
+  }
+
+  // Returns true when the player is on the final lap (i.e. after completing LAPS_TO_WIN-1 laps)
+  function isWinReady(g, player){ return g.laps[player] >= (LAPS_TO_WIN - 1); }
+
+  // Enforce exact-finish only when the player is on the final lap (no wrap-around allowed)
+  function tryWinExactRollRule(g, player, roll){
+    if(!isWinReady(g, player)) return {allowed:true};
+    const pos = g.positions[player];
+    const dist = FINISH - pos; // direct spaces remaining to FINISH without wrapping to START
+    if(dist <= 0) return {allowed:true};
+    if(roll > dist){
+      return {allowed:false, reason:"Exact roll required to reach FINISH on the final lap — roll was too high, so you don't move."};
+    }
+    return {allowed:true};
+  }
+
+  function endTurn(g){
+    const total = g.positions.length || 1;
+    g.current = (g.current + 1) % total;
+    g.lastRoll = null;
+    g.message = "";
+    g.pendingRoll = null;
+  }
+
+  function pickQuestion(category){
+    const pool = loadQs().filter(q => q.category===category);
+    if(pool.length===0) return null;
+    return pool[Math.floor(Math.random()*pool.length)];
+  }
+
+  let pendingMoveDelta = 0;
+  let pendingRollValue = null;
+  let inQuestion = false;
+  function setRollEnabled(enabled){
+    const btn = $("rollBtn");
+    if(btn) btn.disabled = !enabled;
+  }
+
+  function openModal(metaText, q, rollValue){
+    pendingRollValue = rollValue;
+    pendingMoveDelta = 0;
+    $("modalMeta").textContent = metaText;
+    $("modalQ").textContent = q.prompt;
+    $("modalExplain").textContent = q.explain ? ("Notes: " + q.explain) : "";
+    $("modalResult").textContent = "";
+    $("continueBtn").disabled = true;
+
+    const ch = $("modalChoices");
+    ch.innerHTML = "";
+
+    const displayChoices = normalizeChoicesForDisplay(q.choices);
+    const choicesArr = ["A","B","C","D"].map(letter=>({letter, text:displayChoices[letter]}));
+    const shuffled = shuffle(choicesArr);
+
+    shuffled.forEach(({letter,text})=>{
+      const div = document.createElement("div");
+      div.className = "choice";
+      div.textContent = `${letter}. ${text}`;
+      div.addEventListener("click", ()=>{
+        ch.querySelectorAll(".choice").forEach(x=>x.style.pointerEvents="none");
+        if(letter === q.correct){
+          div.classList.add("correct");
+          const advance = pendingRollValue || 0;
+          $("modalResult").innerHTML = `✅ Correct — move forward <b>${advance}</b> spaces (your roll).`;
+          pendingMoveDelta = advance;
+        } else {
+          div.classList.add("wrong");
+          [...ch.children].forEach(node=>{
+            if(node.textContent.startsWith(q.correct+".")) node.classList.add("correct");
+          });
+          $("modalResult").innerHTML = `❌ Wrong — stay in place. Correct answer: <b>${q.correct}</b>.`;
+          pendingMoveDelta = 0;
+        }
+        $("continueBtn").disabled = false;
+      }, {once:true});
+      ch.appendChild(div);
+    });
+
+    $("modalBack").style.display = "flex";
+  }
+  function closeModal(){ $("modalBack").style.display = "none"; }
+  $("closeModalBtn").addEventListener("click", ()=>{
+    inQuestion = false;
+    pendingMoveDelta = 0;
+    pendingRollValue = null;
+    const g = loadGame();
+    g.pendingRoll = null;
+    saveGame(g);
+    setRollEnabled(true);
+    closeModal();
+  });
+
+  function applyQuestionMoveAndContinue(){
+    const g = loadGame();
+    const p = g.current;
+
+    const delta = pendingMoveDelta;
+    pendingMoveDelta = 0;
+    pendingRollValue = null;
+    inQuestion = false;
+    setRollEnabled(true);
+
+    if(delta > 0){
+      const check = tryWinExactRollRule(g, p, delta);
+      if(!check.allowed){
+        g.message = check.reason;
+        endTurn(g);
+        saveGame(g);
+        closeModal();
+        return;
+      }
+    }
+
+    if(delta === 0){
+      g.message = "Incorrect answer — stayed in place. Exact roll still required on final lap.";
+    } else {
+      movePlayerBy(g, p, delta);
+      const pos = g.positions[p];
+      const col = colorForIndex(pos);
+      g.message = specials.has(pos) ? `Landed on ${specials.get(pos).label}.` : `Landed on ${categoryForColor[col]} space.`;
+    }
+    g.pendingRoll = null;
+
+    if(isWinReady(g, p) && g.positions[p]===FINISH){
+      alert(`WINNER: Player ${p+1} (${loadNames()[p]}) — reached FINISH after 3 laps!`);
+      saveGame(defaultGame());
+      closeModal();
+      return;
+    }
+
+    endTurn(g);
+    saveGame(g);
+    closeModal();
+  }
+
+  function takeTurn(){
+    if(inQuestion) return;
+    const qs = loadQs();
+    if(qs.length === 0){
+      alert("Add some questions first (or click 'Restore curated set').");
+      return;
+    }
+
+    const g = loadGame();
+    const p = g.current;
+
+    const roll = rollDie();
+    g.lastRoll = roll;
+    g.pendingRoll = roll;
+    setDieFace(roll);
+
+    const targetPos = (g.positions[p] + roll) % BOARD_SIZE;
+    const targetColor = colorForIndex(targetPos);
+    const category = categoryForColor[targetColor];
+
+    const q = pickQuestion(category);
+    if(!q){
+      alert(`No questions in category "${category}" yet. Add some in the Question Builder.`);
+      g.pendingRoll = null;
+      const g2 = loadGame();
+      endTurn(g2);
+      saveGame(g2);
+      return;
+    }
+    g.message = `Rolled a ${roll}. Answer a ${category} question (landed color). Correct = +${roll}, Wrong = stay put. Exact roll still required to finish.`;
+    saveGame(g);
+    setRollEnabled(false);
+    inQuestion = true;
+    openModal(`Roll ${roll} → ${category} (${targetColor.toUpperCase()})`, q, roll);
+  }
+
+  function seed(){
+    const merged = mergeCurated(loadQs());
+    saveQs(merged);
+    alert("Restored curated set (20 per color) and kept any unique questions you already had.");
+  }
+
+  function exportJSON(){
+    const all = loadQs();
+    const blob = new Blob([JSON.stringify(all,null,2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href=url; a.download="around-the-board-question-bank.json"; a.click();
+    URL.revokeObjectURL(url);
+  }
+  function importJSON(){
+    const txt = $("importBox").value.trim();
+    if(!txt){ $("importStatus").textContent="Paste JSON first."; return; }
+    try{
+      const parsed = JSON.parse(txt);
+      if(!Array.isArray(parsed)) throw new Error("Not an array.");
+      const cleaned = parsed.filter(q=>q && q.id && q.category && q.prompt && q.choices && q.correct);
+      saveQs(cleaned);
+      $("importStatus").textContent = `Imported ${cleaned.length} questions.`;
+    }catch(e){
+      $("importStatus").textContent = "Import failed: " + e.message;
+    }
+  }
+  function wipeAll(){ if(!confirm("Delete ALL questions?")) return; saveQs([]); }
+
+  function show(view){
+    ["play","admin","import"].forEach(v=>{
+      $("view-"+v).style.display = (v===view) ? "" : "none";
+    });
+    document.querySelectorAll(".tab").forEach(t=>{
+      t.classList.toggle("active", t.dataset.view===view);
+    });
+  }
+  document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click", ()=>show(t.dataset.view)));
+
+  $("saveBtn").addEventListener("click", upsertQ);
+  $("clearBtn").addEventListener("click", clearForm);
+  $("filter").addEventListener("change", renderList);
+  $("wipeBtn").addEventListener("click", wipeAll);
+
+  $("exportBtn").addEventListener("click", exportJSON);
+  $("importBtn").addEventListener("click", importJSON);
+
+  $("rollBtn").addEventListener("click", takeTurn);
+  $("resetGameBtn").addEventListener("click", resetGame);
+
+  $("seedBtn").addEventListener("click", seed);
+  $("goAdminBtn").addEventListener("click", ()=>show("admin"));
+
+  $("continueBtn").addEventListener("click", applyQuestionMoveAndContinue);
+
+  $("playerCount").addEventListener("change", renderNameInputs);
+  $("saveNamesBtn").addEventListener("click", ()=>{
+    const count = parseInt($("playerCount").value,10) || getPlayerCount();
+    const names = [];
+    for(let i=0;i<count;i++){
+      const val = ($(`p${i+1}name`)?.value || "").trim();
+      names.push(val || defaultNames[i]);
+    }
+    savePlayerData(count, names);
+    saveGame(defaultGame(count)); // reset positions for new player set
+    renderNameInputs();
+    updateTurnInfo();
+    drawBoard();
+    renderLapGrid();
+    alert(`Saved ${count} players.`);
+  });
+
+  function init(){
+    ensureCuratedBaseline();
+    updateCount();
+    renderList();
+
+    const pd = loadPlayerData();
+    $("playerCount").value = pd.count;
+    renderNameInputs();
+
+    if(!localStorage.getItem(GKEY)) saveGame(defaultGame(pd.count));
+    else { updateTurnInfo(); drawBoard(); updateStatus(); }
+
+    drawBoard();
+    updateTurnInfo();
+    updateStatus();
+    renderLapGrid();
+    setDieFace(loadGame().lastRoll ?? "—");
+    setRollEnabled(true);
+  }
+  init();
+</script>
+</body>
+</html>
